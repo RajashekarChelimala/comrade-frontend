@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { loginApi, meApi, registerApi } from '../services/authApi.js';
+import { loginApi, meApi, registerApi, refreshApi } from '../services/authApi.js';
 
 const AuthContext = createContext(null);
 
@@ -52,10 +52,28 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  async function refresh() {
+    setError(null);
+    try {
+      const data = await refreshApi();
+      setTokens(data.tokens);
+      localStorage.setItem('comrade_auth', JSON.stringify(data.tokens));
+      if (data.csrfToken) {
+        localStorage.setItem('comrade_csrf', data.csrfToken);
+      }
+      return data;
+    } catch (e) {
+      // If refresh fails, logout the user
+      logout();
+      throw e;
+    }
+  }
+
   function logout() {
     setUser(null);
     setTokens(null);
     localStorage.removeItem('comrade_auth');
+    localStorage.removeItem('comrade_csrf');
   }
 
   const value = {
@@ -66,6 +84,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refresh,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
