@@ -5,7 +5,7 @@ import { Link, Navigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 function AdminDashboardPage() {
-    const { user, loading: authLoading } = useAuth();
+    const { user, logout, loading: authLoading } = useAuth();
     const [activeTab, setActiveTab] = useState('flags'); // 'users' or 'flags'
     const [users, setUsers] = useState([]);
     const [flags, setFlags] = useState([]);
@@ -93,6 +93,12 @@ function AdminDashboardPage() {
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition ${activeTab === 'users' ? 'bg-brand-600 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
                     >
                         User Management
+                    </button>
+                    <button
+                        onClick={logout}
+                        className="px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition"
+                    >
+                        Logout
                     </button>
                 </div>
             </header>
