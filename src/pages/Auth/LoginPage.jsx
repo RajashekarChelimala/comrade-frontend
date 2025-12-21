@@ -15,8 +15,15 @@ function LoginPage() {
     setError(null);
     setLoading(true);
     try {
-      await login(email, password);
-      navigate('/');
+      const data = await login(email, password);
+      // Check role from response if available, or rely on state (which might lag)
+      // Since login returns data, let's use it if possible. 
+      // AuthContext login returns the data object.
+      if (data?.user?.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {

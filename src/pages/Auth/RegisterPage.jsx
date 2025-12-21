@@ -10,7 +10,7 @@ function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [handle, setHandle] = useState('');
+  const [comradeId, setComradeId] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [info, setInfo] = useState(null);
@@ -23,11 +23,12 @@ function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      const payload = { name, email, password };
-      if (handle) payload.handle = handle;
+      const payload = { name, email, password, comradeId };
       const data = await register(payload);
-      setInfo(`Welcome ${data.user.name}. Handle: ${data.user.comradeHandle}, ID: ${data.user.comradeId}`);
-      navigate(`/verify-email?email=${encodeURIComponent(data.user.email)}`);
+      setInfo(`Welcome ${data.user.name}. Comrade ID: ${data.user.comradeId}`);
+      navigate(`/verify-email?email=${encodeURIComponent(data.user.email)}`, {
+        state: { message: `Registration successful! Welcome, ${data.user.name}.` }
+      });
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -75,12 +76,15 @@ function RegisterPage() {
             />
           </label>
           <label className="text-sm font-medium text-slate-200">
-            Handle (optional)
+            Comrade ID
             <input
               type="text"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
-              placeholder="e.g. rajashekar"
+              value={comradeId}
+              onChange={(e) => setComradeId(e.target.value)}
+              placeholder="e.g. raja.shekar_01"
+              required
+              pattern="^[a-zA-Z0-9_.]+$"
+              title="Only letters, numbers, underscores, and dots allowed."
               className="input mt-1"
             />
           </label>

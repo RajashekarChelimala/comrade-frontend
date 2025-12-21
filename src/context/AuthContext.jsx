@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loginApi, meApi, registerApi, refreshApi } from '../services/authApi.js';
+import { disconnectSocket } from '../services/socket.js';
 
 const AuthContext = createContext(null);
 
@@ -70,6 +71,7 @@ export function AuthProvider({ children }) {
   }
 
   function logout() {
+    disconnectSocket(); // Disconnect socket to update online status
     setUser(null);
     setTokens(null);
     localStorage.removeItem('comrade_auth');

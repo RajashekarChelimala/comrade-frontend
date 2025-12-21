@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { getChat, getMessages, sendMessage, reactToMessage, removeReaction } from '../../services/chatApi.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getSocket } from '../../services/socket.js';
 
 function ChatPage() {
   const { chatId } = useParams();
-  const { user, tokens } = useAuth();
+  const { user, tokens, loading: authLoading } = useAuth();
   const [chat, setChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -22,14 +22,16 @@ function ChatPage() {
   const [openMenuForId, setOpenMenuForId] = useState(null);
   const [swipeStartX, setSwipeStartX] = useState(null);
   const [swipeMessageId, setSwipeMessageId] = useState(null);
+  const [activeInChat, setActiveInChat] = useState([]);
+  const navigate = useNavigate();
 
   // Utility functions for timestamps and dates
   const formatTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: true 
+      hour12: true
     });
   }, []);
 
@@ -38,16 +40,16 @@ function ChatPage() {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
       return 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
       return 'Yesterday';
     } else {
-      return date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString('en-US', {
         weekday: 'long',
-        month: 'short', 
-        day: 'numeric' 
+        month: 'short',
+        day: 'numeric'
       });
     }
   }, []);
@@ -65,10 +67,10 @@ function ChatPage() {
 
   const handleTouchMove = useCallback((e) => {
     if (!swipeStartX || !swipeMessageId) return;
-    
+
     const currentX = e.touches[0].clientX;
     const diffX = currentX - swipeStartX;
-    
+
     // Swipe right to reply (for messages from others)
     if (diffX > 50) {
       const message = messages.find(m => m.id === swipeMessageId);
@@ -108,13 +110,37 @@ function ChatPage() {
       );
     }
 
+    function handleActiveUsers(payload) {
+      setActiveInChat(prev => {
+        const set = new Set(payload.userIds);
+        return Array.from(set);
+      });
+    }
+
+    function handleUserJoined(payload) {
+      setActiveInChat(prev => {
+        if (prev.includes(payload.userId)) return prev;
+        return [...prev, payload.userId];
+      });
+    }
+
+    function handleUserLeft(payload) {
+      setActiveInChat(prev => prev.filter(id => id !== payload.userId));
+    }
+
     socket.on('chat:new_message', handleNewMessage);
     socket.on('chat:message_updated', handleMessageUpdated);
+    socket.on('chat:active_users', handleActiveUsers);
+    socket.on('chat:user_joined', handleUserJoined);
+    socket.on('chat:user_left', handleUserLeft);
 
     return () => {
       socket.emit('leave_chat', chatId);
       socket.off('chat:new_message', handleNewMessage);
       socket.off('chat:message_updated', handleMessageUpdated);
+      socket.off('chat:active_users', handleActiveUsers);
+      socket.off('chat:user_joined', handleUserJoined);
+      socket.off('chat:user_left', handleUserLeft);
     };
   }, [chatId, tokens]);
 
@@ -277,12 +303,22 @@ function ChatPage() {
     }
   }
 
-  if (!user) {
+  if (authLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4 py-8">
-        <div className="card px-8 py-10 text-center">
-          <p className="subtle-text">You must be logged in to view this chat.</p>
-        </div>
+        <p className="subtle-text">Loading authentication...</p>
+      </main>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (error) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-4 py-8">
+        <p className="text-sm text-red-400">{error}</p>
       </main>
     );
   }
@@ -304,15 +340,57 @@ function ChatPage() {
   }
 
   const other = (chat.participants || []).find((p) => p._id !== user.id && p._id !== user._id);
+  const isOtherActiveInChat = other && activeInChat.includes(other._id);
+
+  let statusText = '';
+  if (other) {
+    if (isOtherActiveInChat) {
+      statusText = 'In this chat';
+    } else if (other.isOnline) {
+      statusText = 'Online';
+    } else if (other.lastSeenAt) {
+      statusText = `Last seen ${new Date(other.lastSeenAt).toLocaleString()}`;
+    }
+  }
 
   return (
     <main className="mx-auto flex h-screen max-w-5xl flex-col overflow-hidden px-4 py-6">
-      <header className="mb-4 flex items-center justify-between border-b border-slate-800 pb-3">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-50">
-            Chat with {other ? `${other.name} (${other.comradeHandle})` : chat.chatId}
+      <header className="mb-4 flex items-center gap-3 border-b border-slate-800 pb-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white transition flex-shrink-0"
+          aria-label="Go back"
+        >
+          ←
+        </button>
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <h1 className="text-lg font-semibold text-slate-50 truncate">
+            {other ? other.name : chat.chatId}
           </h1>
-          <p className="subtle-text text-xs">Messages are end-to-end encrypted and temporary for media.</p>
+          <div className="flex flex-col text-xs">
+            <span className="subtle-text">Messages are end-to-end encrypted</span>
+            <div className="flex items-center gap-2 mt-0.5 overflow-hidden">
+              {other && (
+                <>
+                  {other.isOnline ? (
+                    <span className="text-green-400 font-medium flex-shrink-0">● Online</span>
+                  ) : (
+                    <span className="text-slate-500 truncate">
+                      {other.lastSeenAt
+                        ? `Last seen ${new Date(other.lastSeenAt).toLocaleString()}`
+                        : 'Offline'}
+                    </span>
+                  )}
+
+                  {isOtherActiveInChat && (
+                    <span className="text-brand-400 font-medium border-l border-slate-700 pl-2 ml-1 flex-shrink-0">
+                      In this chat
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </header>
       <section
@@ -320,7 +398,7 @@ function ChatPage() {
         onScroll={handleScroll}
         className="scrollbar-thin flex-1 overflow-y-auto rounded-2xl border border-slate-800/80 bg-slate-950/60 p-4"
       >
-        <div 
+        <div
           className="flex flex-col gap-3"
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -339,11 +417,11 @@ function ChatPage() {
               .map((opt) => (counts[opt.type] ? `${opt.emoji}${counts[opt.type]}` : null))
               .filter(Boolean)
               .join(' ');
-            
+
             // Add date separator
-            const showDateSeparator = index === 0 || 
+            const showDateSeparator = index === 0 ||
               getMessageDateKey(m.createdAt) !== getMessageDateKey(messages[index - 1].createdAt);
-            
+
             return (
               <React.Fragment key={m.id}>
                 {showDateSeparator && (
@@ -358,18 +436,17 @@ function ChatPage() {
                 <div className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                   <div className="relative group max-w-[70%]">
                     <div
-                      className={`rounded-2xl px-3 py-2 text-sm shadow-sm transition-all duration-200 ${
-                        isMe
-                          ? 'bg-brand-600 text-white rounded-br-sm hover:bg-brand-700'
-                          : 'bg-slate-800/80 text-slate-50 rounded-bl-sm hover:bg-slate-700/80'
-                      }`}
+                      className={`rounded-2xl px-3 py-2 text-sm shadow-sm transition-all duration-200 ${isMe
+                        ? 'bg-brand-600 text-white rounded-br-sm hover:bg-brand-700'
+                        : 'bg-slate-800/80 text-slate-50 rounded-bl-sm hover:bg-slate-700/80'
+                        }`}
                       onClick={() => setActiveReactionId((prev) => (prev === m.id ? null : m.id))}
                       onTouchStart={(e) => handleTouchStart(e, m.id)}
                     >
                       {m.replyTo && (
                         <div className="mb-1 rounded-lg bg-slate-900/70 px-2 py-1 text-[11px] text-slate-300">
                           <p className="font-semibold text-brand-300">
-                            @{m.replyTo.sender?.comradeHandle || m.replyTo.sender?.name || 'Unknown'}
+                            @{m.replyTo.sender?.comradeId || m.replyTo.sender?.name || 'Unknown'}
                           </p>
                           <p className="truncate">
                             {m.replyTo.type === 'text'
@@ -381,7 +458,7 @@ function ChatPage() {
                         </div>
                       )}
                       <p className="mb-1 text-xs font-semibold text-slate-200">
-                        {m.sender?.comradeHandle || 'Unknown'}
+                        {m.sender?.comradeId || 'Unknown'}
                       </p>
                       {m.type === 'text' && (
                         <div className="flex items-end gap-2">
@@ -425,9 +502,8 @@ function ChatPage() {
                               key={opt.type}
                               type="button"
                               onClick={() => handleReactionClick(m, opt)}
-                              className={`rounded-full px-1 hover:bg-slate-900/60 ${
-                                myReaction && myReaction.type === opt.type ? 'bg-slate-900/80' : ''
-                              }`}
+                              className={`rounded-full px-1 hover:bg-slate-900/60 ${myReaction && myReaction.type === opt.type ? 'bg-slate-900/80' : ''
+                                }`}
                             >
                               {opt.emoji}
                             </button>
@@ -524,7 +600,7 @@ function ChatPage() {
         <div className="mt-3 flex items-start justify-between rounded-lg bg-slate-900/80 px-3 py-2 text-xs">
           <div>
             <p className="font-semibold text-brand-300">
-              Replying to @{replyTo.sender?.comradeHandle || replyTo.sender?.name || 'Unknown'}
+              Replying to @{replyTo.sender?.comradeId || replyTo.sender?.name || 'Unknown'}
             </p>
             <p className="max-w-xs truncate text-slate-200">
               {replyTo.type === 'text'

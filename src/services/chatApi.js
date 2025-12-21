@@ -4,6 +4,10 @@ export function getChats() {
   return apiClient.get('/chats');
 }
 
+export function createChat(recipientId) {
+  return apiClient.post('/chats', { recipientId });
+}
+
 export function getChat(chatId) {
   return apiClient.get(`/chats/${chatId}`);
 }

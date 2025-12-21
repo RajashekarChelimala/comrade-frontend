@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getChats } from '../../services/chatApi.js';
 import { getIncomingRequests, getOutgoingRequests, acceptRequest, rejectRequest, sendRequest } from '../../services/requestApi.js';
 import { searchUsers, blockUser, reportUser } from '../../services/userApi.js';
 
 function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading: authLoading } = useAuth();
   const [chats, setChats] = useState([]);
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
@@ -66,9 +67,14 @@ function DashboardPage() {
   async function handleSendRequest(userId) {
     try {
       await sendRequest(userId);
-      alert('Request sent');
+      toast.success('Friend request sent!');
+
+      // Update local search results state to reflect change immediately
+      setSearchResults(prev => prev.map(u =>
+        u._id === userId ? { ...u, relationship: 'SENT' } : u
+      ));
     } catch (e) {
-      alert(e.message || 'Failed to send request');
+      toast.error(e.message || 'Failed to send request');
     }
   }
 
@@ -92,37 +98,42 @@ function DashboardPage() {
     }
   }
 
-  if (!user) {
+  if (authLoading) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4 py-8">
-        <div className="card px-8 py-10 text-center">
-          <h1 className="mb-2 text-2xl font-semibold text-slate-50">Comrade</h1>
-          <p className="subtle-text mb-4">You are not logged in.</p>
-          <Link
-            to="/login"
-            className="btn-primary inline-flex items-center justify-center px-6 py-2 text-sm font-semibold"
-          >
-            Go to Login
-          </Link>
-        </div>
+        <p className="subtle-text">Loading authentication...</p>
       </main>
     );
   }
 
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (user.role === 'admin') {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-4 py-8">
-      <header className="flex items-center justify-between">
+    <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-8 lg:px-8">
+      <header className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 shadow-xl sm:flex-row sm:items-center sm:justify-between border border-slate-700/50">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-50">Comrade Dashboard</h1>
-          <p className="subtle-text mt-1">
-            Logged in as {user.name} ({user.comradeHandle}) – ID: {user.comradeId}
+          <h1 className="text-3xl font-bold tracking-tight text-white">Comrade Dashboard</h1>
+          <p className="mt-2 text-slate-400 flex items-center gap-2">
+            <span className="inline-block h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+            Logged in as <span className="font-semibold text-slate-200">{user.name}</span>
+            <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400 border border-slate-700">#{user.comradeId}</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/profile" className="text-sm text-slate-300 hover:text-slate-100">
-            Profile &amp; Settings
+          <Link to="/profile" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white border border-slate-700">
+            Profile & Settings
           </Link>
-          <button type="button" onClick={logout} className="btn-primary px-3 py-2 text-sm">
+          <button type="button" onClick={logout} className="rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/20 border border-red-500/20">
             Logout
           </button>
         </div>
@@ -131,83 +142,121 @@ function DashboardPage() {
       {loading && <p className="subtle-text">Loading...</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <section className="card col-span-2 px-6 py-5">
-          <h2 className="section-title">Find Comrades</h2>
-          <form onSubmit={handleSearch} className="mt-2 flex gap-2">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by handle, name, or ID"
-              className="input flex-1"
-            />
-            <button type="submit" disabled={searchLoading} className="btn-primary px-4 py-2 text-sm">
-              {searchLoading ? 'Searching...' : 'Search'}
+      <div className="grid gap-8 lg:grid-cols-3">
+        <section className="card col-span-2 flex flex-col gap-4 border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-sm shadow-xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+              <span className="text-2xl">🔍</span> Find Comrades
+            </h2>
+          </div>
+
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name or Comrade ID..."
+                className="input w-full pl-10"
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+            </div>
+            <button type="submit" disabled={searchLoading} className="btn-primary px-6">
+              {searchLoading ? '...' : 'Search'}
             </button>
           </form>
-          {searchError && <p className="mt-2 text-sm text-red-400">{searchError}</p>}
-          <ul className="mt-4 space-y-2 text-sm">
-            {searchResults.map((u) => (
-              <li
-                key={u._id}
-                className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-900/60 px-3 py-2"
-              >
-                <div>
-                  <p className="text-slate-100">
-                    {u.name} <span className="text-slate-400">({u.comradeHandle})</span>
-                  </p>
-                  <p className="text-xs text-slate-500">ID: {u.comradeId}</p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSendRequest(u._id)}
-                    className="btn-primary px-3 py-1 text-xs"
-                  >
-                    Send Request
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleBlock(u._id)}
-                    className="rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
-                  >
-                    Block
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleReport(u._id)}
-                    className="rounded-lg border border-red-500/50 px-3 py-1 text-xs text-red-300 hover:bg-red-500/10"
-                  >
-                    Report
-                  </button>
-                </div>
-              </li>
-            ))}
+
+          {searchError && <p className="text-sm text-red-400">{searchError}</p>}
+
+          <ul className="space-y-3">
+            {searchResults.map((u) => {
+              const relation = u.relationship || 'NONE'; // NONE, SENT, RECEIVED, FRIEND
+              return (
+                <li
+                  key={u._id}
+                  className="flex items-center justify-between rounded-xl border border-slate-700/50 bg-slate-800/40 p-3 transition hover:border-slate-600 hover:bg-slate-800/60"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-700 text-lg font-bold text-slate-300">
+                      {u.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-100">{u.name}</p>
+                      <p className="text-xs text-slate-500 font-mono">@{u.comradeId}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {relation === 'NONE' && (
+                      <button
+                        type="button"
+                        onClick={() => handleSendRequest(u._id)}
+                        className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition hover:bg-brand-500"
+                      >
+                        Add Friend
+                      </button>
+                    )}
+                    {relation === 'SENT' && (
+                      <button
+                        disabled
+                        className="rounded-lg bg-slate-700/50 px-3 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed border border-slate-700"
+                      >
+                        Request Sent
+                      </button>
+                    )}
+                    {relation === 'RECEIVED' && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleAccept(u.requestId)}
+                          className="rounded-lg bg-emerald-600/20 px-3 py-1.5 text-xs font-medium text-emerald-400 border border-emerald-600/20 hover:bg-emerald-600/30"
+                        >
+                          Accept
+                        </button>
+                      </div>
+                    )}
+                    {relation === 'FRIEND' && (
+                      <span className="text-xs font-medium text-green-400 bg-green-500/10 px-2 py-1 rounded border border-green-500/20">
+                        Friend
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
             {searchResults.length === 0 && !searchLoading && (
-              <li className="subtle-text mt-2">Search by handle, name, or Comrade ID to find people.</li>
+              <div className="flex flex-col items-center justify-center py-8 text-center text-slate-500 opacity-60">
+                <span className="text-3xl mb-2">👥</span>
+                <p className="text-sm">Search people to connect</p>
+              </div>
             )}
           </ul>
         </section>
 
-        <section className="card px-6 py-5">
-          <h2 className="section-title">Recent Chats</h2>
+        <section className="card flex flex-col gap-4 border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-sm shadow-xl">
+          <h2 className="text-xl font-bold text-slate-100">Recent Chats</h2>
           {chats.length === 0 && <p className="subtle-text">No chats yet.</p>}
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
             {chats.map((chat) => {
               const other = (chat.participants || []).find((p) => p._id !== user.id && p._id !== user._id);
               return (
                 <li key={chat.chatId}>
                   <Link
                     to={`/chat/${chat.chatId}`}
-                    className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-900/60 px-3 py-2 hover:border-brand-500/70"
+                    className="flex items-center gap-3 rounded-xl border border-transparent bg-slate-800/30 p-3 transition hover:border-slate-700 hover:bg-slate-800/60"
                   >
-                    <span className="text-slate-100">
-                      {other ? `${other.name} (${other.comradeHandle})` : chat.chatId}
-                    </span>
-                    <span className="text-xs text-slate-500">
-                      {chat.lastMessagePreview || 'No messages yet'}
-                    </span>
+                    <div className="relative h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600">
+                      {/* Avatar placeholder */}
+                    </div>
+                    <div className="flex-1 overflow-hidden">
+                      <div className="flex justify-between items-baseline">
+                        <span className="truncate font-medium text-slate-100">
+                          {other ? `${other.name}` : chat.chatId}
+                        </span>
+                        {/* timestamp could go here */}
+                      </div>
+                      <p className="truncate text-xs text-slate-400">
+                        {chat.lastMessagePreview || 'No messages yet'}
+                      </p>
+                    </div>
                   </Link>
                 </li>
               );
@@ -216,31 +265,35 @@ function DashboardPage() {
         </section>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <section className="card px-6 py-5">
-          <h2 className="section-title">Incoming Requests</h2>
-          {incoming.length === 0 && <p className="subtle-text">No incoming requests.</p>}
-          <ul className="mt-3 space-y-2 text-sm">
+      <div className="grid gap-8 md:grid-cols-2">
+        <section className="card border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-sm shadow-xl">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">Incoming Requests</h2>
+          {incoming.length === 0 && <p className="subtle-text text-sm">No pending requests.</p>}
+          <ul className="space-y-3">
             {incoming.map((r) => (
               <li
                 key={r._id}
-                className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-900/60 px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-slate-800/30 p-3"
               >
-                <span className="text-slate-100">
-                  {r.sender?.name} <span className="text-slate-400">({r.sender?.comradeHandle})</span>
-                </span>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-slate-700"></div>
+                  <div className="text-sm">
+                    <p className="text-slate-200 font-medium">{r.sender?.name}</p>
+                    <p className="text-xs text-slate-500">@{r.sender?.comradeId}</p>
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => handleAccept(r._id)}
-                    className="btn-primary px-3 py-1 text-xs"
+                    className="rounded-lg bg-emerald-600/20 px-3 py-1 text-xs font-semibold text-emerald-400 border border-emerald-600/20 hover:bg-emerald-600/30"
                   >
                     Accept
                   </button>
                   <button
                     type="button"
                     onClick={() => handleReject(r._id)}
-                    className="rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-200 hover:bg-slate-800"
+                    className="rounded-lg bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400 border border-red-500/20 hover:bg-red-500/20"
                   >
                     Decline
                   </button>
@@ -250,19 +303,22 @@ function DashboardPage() {
           </ul>
         </section>
 
-        <section className="card px-6 py-5">
-          <h2 className="section-title">Outgoing Requests</h2>
-          {outgoing.length === 0 && <p className="subtle-text">No outgoing requests.</p>}
-          <ul className="mt-3 space-y-2 text-sm">
+        <section className="card border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-sm shadow-xl">
+          <h2 className="text-lg font-semibold text-slate-100 mb-4">Outgoing Requests</h2>
+          {outgoing.length === 0 && <p className="subtle-text text-sm">No outgoing requests.</p>}
+          <ul className="space-y-3">
             {outgoing.map((r) => (
               <li
                 key={r._id}
-                className="flex items-center justify-between rounded-lg border border-slate-800/80 bg-slate-900/60 px-3 py-2"
+                className="flex items-center justify-between rounded-lg bg-slate-800/30 p-3"
               >
-                <span className="text-slate-100">
-                  To {r.recipient?.name} ({r.recipient?.comradeHandle})
-                </span>
-                <span className="text-xs text-slate-500">{r.status}</span>
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-slate-700 flex items-center justify-center text-xs opacity-50">?</div>
+                  <span className="text-sm text-slate-300">
+                    To <span className="text-white font-medium">{r.recipient?.name}</span>
+                  </span>
+                </div>
+                <span className="rounded-full bg-slate-700/50 px-2 py-1 text-[10px] uppercase tracking-wider text-slate-400">{r.status}</span>
               </li>
             ))}
           </ul>

@@ -9,17 +9,26 @@ import DashboardPage from './pages/Dashboard/DashboardPage.jsx';
 import ChatPage from './pages/Chat/ChatPage.jsx';
 import ProfilePage from './pages/Profile/ProfilePage.jsx';
 
+import LandingPage from './pages/Home/LandingPage.jsx';
+import UserProfilePage from './pages/Profile/UserProfilePage.jsx';
+import AdminDashboardPage from './pages/Admin/AdminDashboardPage.jsx';
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
     <FeatureFlagsProvider>
       <AuthProvider>
+        <Toaster position="top-right" />
         <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/" element={<DashboardPage />} />
           <Route path="/chat/:chatId" element={<ChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/:userId" element={<UserProfilePage />} />
+          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

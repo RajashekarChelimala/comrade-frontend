@@ -8,7 +8,7 @@ export function FeatureFlagsProvider({ children }) {
   useEffect(() => {
     async function loadFlags() {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000'}/config/feature-flags`, {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/config/feature-flags`, {
           credentials: 'include',
         });
         if (!res.ok) return;

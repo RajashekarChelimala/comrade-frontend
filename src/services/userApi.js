@@ -8,10 +8,18 @@ export function updateMe(payload) {
   return apiClient.patch('/users/me', payload);
 }
 
-export function searchUsers(params) {
-  const query = new URLSearchParams(params).toString();
-  const q = query ? `?${query}` : '';
-  return apiClient.get(`/users/search${q}`);
+export function searchUsers({ query, by }) {
+  const params = new URLSearchParams({ query });
+  if (by) params.append('by', by);
+  return apiClient.get(`/users/search?${params}`);
+}
+
+export function getFriends() {
+  return apiClient.get('/users/friends');
+}
+
+export function removeFriend(userId) {
+  return apiClient.delete(`/users/friends/${userId}`);
 }
 
 export function blockUser(id) {
