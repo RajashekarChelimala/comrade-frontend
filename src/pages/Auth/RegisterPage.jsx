@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useFeatureFlags } from '../../context/FeatureFlagsContext.jsx';
+import toast from 'react-hot-toast';
 
 function RegisterPage() {
   const navigate = useNavigate();
@@ -25,10 +26,8 @@ function RegisterPage() {
     try {
       const payload = { name, email, password, comradeId };
       const data = await register(payload);
-      setInfo(`Welcome ${data.user.name}. Comrade ID: ${data.user.comradeId}`);
-      navigate(`/verify-email?email=${encodeURIComponent(data.user.email)}`, {
-        state: { message: `Registration successful! Welcome, ${data.user.name}.` }
-      });
+      toast.success('Registration request sent! Please wait for admin approval.', { duration: 6000 });
+      navigate(`/login`);
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {

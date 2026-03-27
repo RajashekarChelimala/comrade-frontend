@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { getChats } from '../../services/chatApi.js';
 import { getIncomingRequests, getOutgoingRequests, acceptRequest, rejectRequest, sendRequest } from '../../services/requestApi.js';
 import { searchUsers, blockUser, reportUser } from '../../services/userApi.js';
+import { Search, UserPlus, Users, CheckCircle2, Clock, Settings, LogOut, MessageCircle, ChevronRight } from 'lucide-react';
 
 function DashboardPage() {
   const { user, logout, loading: authLoading } = useAuth();
@@ -114,10 +115,6 @@ function DashboardPage() {
     return <Navigate to="/admin" replace />;
   }
 
-  if (user.role === 'admin') {
-    return <Navigate to="/admin" replace />;
-  }
-
   return (
     <main className="mx-auto flex min-h-screen max-w-7xl flex-col gap-8 px-4 py-8 lg:px-8">
       <header className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 shadow-xl sm:flex-row sm:items-center sm:justify-between border border-slate-700/50">
@@ -130,11 +127,11 @@ function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link to="/profile" className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white border border-slate-700">
-            Profile & Settings
+          <Link to="/profile" className="flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white border border-slate-700">
+            <Settings className="h-4 w-4" /> Profile & Settings
           </Link>
-          <button type="button" onClick={logout} className="rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/20 border border-red-500/20">
-            Logout
+          <button type="button" onClick={logout} className="flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/20 border border-red-500/20">
+            <LogOut className="h-4 w-4" /> Logout
           </button>
         </div>
       </header>
@@ -146,7 +143,7 @@ function DashboardPage() {
         <section className="card col-span-2 flex flex-col gap-4 border border-slate-800/60 bg-slate-900/60 p-6 backdrop-blur-sm shadow-xl">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <span className="text-2xl">🔍</span> Find Comrades
+              <Search className="h-5 w-5 text-brand-400" /> Find Comrades
             </h2>
           </div>
 
@@ -159,7 +156,7 @@ function DashboardPage() {
                 placeholder="Search by name or Comrade ID..."
                 className="input w-full pl-10"
               />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
             </div>
             <button type="submit" disabled={searchLoading} className="btn-primary px-6">
               {searchLoading ? '...' : 'Search'}
@@ -224,7 +221,7 @@ function DashboardPage() {
             })}
             {searchResults.length === 0 && !searchLoading && (
               <div className="flex flex-col items-center justify-center py-8 text-center text-slate-500 opacity-60">
-                <span className="text-3xl mb-2">👥</span>
+                <Users className="h-10 w-10 mb-2 opacity-40" />
                 <p className="text-sm">Search people to connect</p>
               </div>
             )}
@@ -243,8 +240,9 @@ function DashboardPage() {
                     to={`/chat/${chat.chatId}`}
                     className="flex items-center gap-3 rounded-xl border border-transparent bg-slate-800/30 p-3 transition hover:border-slate-700 hover:bg-slate-800/60"
                   >
-                    <div className="relative h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600">
-                      {/* Avatar placeholder */}
+                    <div className="relative h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow">
+                      {other ? other.name?.charAt(0).toUpperCase() : <MessageCircle className="h-4 w-4" />}
+                      {other?.isOnline && <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-slate-950" />}
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <div className="flex justify-between items-baseline">
