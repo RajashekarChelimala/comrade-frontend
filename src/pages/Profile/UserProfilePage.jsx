@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { searchUsers, removeFriend, getFriends } from '../../services/userApi.js';
 import { createChat } from '../../services/chatApi.js';
 import toast from 'react-hot-toast';
+import {
+  ArrowLeft, MessageCircle, UserPlus, Clock, Calendar, Send
+} from 'lucide-react';
 
 function UserProfilePage() {
     const { userId } = useParams();
@@ -13,46 +16,14 @@ function UserProfilePage() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [messages, setMessages] = useState([]); // Placeholder if we want to show shared history later
-
-    // Relationship state
-    const [relationship, setRelationship] = useState('NONE'); // NONE, SENT, RECEIVED, FRIEND
+    const [relationship, setRelationship] = useState('NONE');
     const [requestId, setRequestId] = useState(null);
 
     useEffect(() => {
         async function loadProfile() {
             try {
-                // reuse searchUsers by ID to get relationships + info
-                // Not the most efficient but avoids creating new endpoint for now as per plan
-                // Actually, let's just use searchUsers with `by=id` which now returns 1 result with relationship
-
-                // We'll search by comradeId if userId is actually a comradeId, 
-                // BUT the route likely passes the DB _id. 
-                // Search API expects `query` and `by`.
-
-                // ISSUE: Search API searches by comradeId string, but here we might have database ID.
-                // Let's assume for now we link via ID. We might need a proper `getUser` endpoint?
-                // The current implementation of `searchUsers` doesn't support "get by ID" cleanly unless we change it.
-                // User.controller.js -> `filter` logic. 
-
-                // Let's try to fetch all friends and see if they are in there? No, that's only for friends.
-                // Let's quick-add `getUserById` to `user.controller.js`?
-                // Or we can just use the search API if we pass the comradeId. 
-                // The link from Friend List likely has the ID.
-
-                // Better approach: Create a dedicated fetch function in this component that calls a new endpoint
-                // OR reuse search if we know the comradeId.
-                // Let's assume we link using `comradeId` in the URL for better aesthetics? 
-                // Route: /profile/:comradeId
-
                 const res = await searchUsers({ query: userId, by: 'id' });
-                // If we passed the DB ID, this BY='id' means comradeId in backend. 
-                // If we pass DB ID, we need to handle that.
-
-                // Let's stick to using `comradeId` in URL. 
-
                 if (res.users && res.users.length > 0) {
-                    // Find exact match (search might be fuzzy)
                     const match = res.users.find(u => u.comradeId === userId || u._id === userId);
                     if (match) {
                         setProfile(match);
@@ -64,7 +35,6 @@ function UserProfilePage() {
                 } else {
                     setError('User not found');
                 }
-
             } catch (err) {
                 setError('Failed to load profile');
             } finally {
@@ -77,74 +47,106 @@ function UserProfilePage() {
     async function handleMessage() {
         try {
             const res = await createChat(profile._id);
-            // Use chatId for navigation (string ID), not _id
             navigate(`/chat/${res.chat.chatId}`);
         } catch (e) {
-            console.error(e);
             toast.error('Failed to start chat');
         }
     }
 
-    const handleBack = () => navigate(-1);
-
-    if (loading) return <div className="flex justify-center py-10"><span className="subtle-text animate-pulse">Loading profile...</span></div>;
-    if (error) return <div className="flex justify-center py-10"><span className="text-red-400">{error}</span></div>;
+    if (loading) return (
+        <div className="flex min-h-screen items-center justify-center">
+            <div className="h-8 w-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+    );
+    if (error) return (
+        <div className="flex min-h-screen items-center justify-center">
+            <p className="text-red-400 text-sm">{error}</p>
+        </div>
+    );
     if (!profile) return null;
 
     return (
         <main className="mx-auto max-w-2xl px-4 py-8">
             <button
-                onClick={handleBack}
-                className="mb-6 flex items-center gap-2 text-slate-400 hover:text-slate-200 transition"
+                onClick={() => navigate(-1)}
+                className="mb-6 flex items-center gap-2 text-slate-400 hover:text-white transition group"
             >
-                ← Back
+                <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" /> Back
             </button>
 
-            <div className="card overflow-hidden border border-slate-700/50 bg-slate-800/40 backdrop-blur-md">
-                <div className="h-32 bg-gradient-to-r from-brand-900 to-slate-900"></div>
+            <div className="card overflow-hidden border border-slate-800/50 bg-slate-900/60 backdrop-blur-md shadow-xl animate-fadeIn">
+                {/* Cover */}
+                <div className="h-36 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-brand-600/40 via-brand-900/60 to-slate-950" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(99,102,241,0.3)_0%,transparent_60%)]" />
+                </div>
+
                 <div className="px-6 pb-6 relative">
-                    {/* Avatar and Action Row - Fixed Alignment */}
-                    <div className="flex justify-between items-end -mt-12 mb-4">
+                    {/* Avatar + Actions */}
+                    <div className="flex justify-between items-end -mt-14 mb-5">
                         <div className="relative">
-                            <div className="h-24 w-24 rounded-full bg-slate-800 border-4 border-slate-900 flex items-center justify-center text-3xl font-bold text-slate-300 shadow-xl">
+                            <div className="h-28 w-28 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 border-4 border-slate-900 flex items-center justify-center text-4xl font-bold text-white shadow-xl shadow-brand-900/30">
                                 {profile.name.charAt(0).toUpperCase()}
                             </div>
-                            <div className={`absolute bottom-1 right-1 h-5 w-5 rounded-full border-2 border-slate-900 ${profile.isOnline ? 'bg-green-500' : 'bg-slate-500'}`} />
+                            <div className={`absolute bottom-2 right-2 h-5 w-5 rounded-full border-[3px] border-slate-900 shadow ${profile.isOnline ? 'bg-green-400' : 'bg-slate-500'}`} />
                         </div>
 
                         <div className="mb-2">
                             {relationship === 'FRIEND' && (
-                                <button onClick={handleMessage} className="btn-primary px-6 py-2 text-sm font-medium">Message</button>
+                                <button onClick={handleMessage} className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium shadow-lg shadow-brand-900/30">
+                                    <MessageCircle className="h-4 w-4" /> Message
+                                </button>
                             )}
                             {relationship === 'NONE' && (
-                                <button className="btn-primary px-6 py-2 text-sm font-medium">Add Friend</button>
+                                <button className="btn-primary flex items-center gap-2 px-5 py-2.5 text-sm font-medium">
+                                    <UserPlus className="h-4 w-4" /> Add Friend
+                                </button>
                             )}
                             {relationship === 'SENT' && (
-                                <button disabled className="btn-secondary px-6 py-2 text-sm font-medium opacity-50 cursor-not-allowed">Request Sent</button>
+                                <button disabled className="flex items-center gap-2 px-5 py-2.5 text-sm font-medium bg-slate-800 text-slate-400 rounded-lg border border-slate-700 cursor-not-allowed">
+                                    <Send className="h-4 w-4" /> Request Sent
+                                </button>
                             )}
                         </div>
                     </div>
 
-                    {/* Text Content */}
+                    {/* Info */}
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-100">{profile.name}</h1>
-                        <p className="text-brand-400 font-mono">@{profile.comradeId}</p>
+                        <h1 className="text-2xl font-bold text-white">{profile.name}</h1>
+                        <p className="text-brand-400 font-mono text-sm">@{profile.comradeId}</p>
 
-                        <div className="mt-4 space-y-2 text-sm text-slate-400">
-                            <p className="flex items-center gap-2">
-                                <span>📅</span>
-                                Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString()}
-                            </p>
+                        <div className="mt-5 space-y-3">
+                            <div className="flex items-center gap-3 text-sm text-slate-400">
+                                <div className="p-2 rounded-lg bg-slate-800/60">
+                                    <Calendar className="h-4 w-4" />
+                                </div>
+                                <span>Joined {new Date(profile.createdAt || Date.now()).toLocaleDateString()}</span>
+                            </div>
                             {profile.isOnline ? (
-                                <p className="flex items-center gap-2 text-green-400">
-                                    <span className="h-2 w-2 rounded-full bg-green-500"></span> Online Now
-                                </p>
+                                <div className="flex items-center gap-3 text-sm text-green-400">
+                                    <div className="p-2 rounded-lg bg-green-500/10">
+                                        <span className="flex h-4 w-4 items-center justify-center">
+                                            <span className="h-2.5 w-2.5 rounded-full bg-green-400 animate-pulse" />
+                                        </span>
+                                    </div>
+                                    <span className="font-medium">Online Now</span>
+                                </div>
                             ) : (
-                                <p className="flex items-center gap-2">
-                                    <span>🕒</span> Last seen {profile.lastSeenAt ? new Date(profile.lastSeenAt).toLocaleString() : 'Recently'}
-                                </p>
+                                <div className="flex items-center gap-3 text-sm text-slate-400">
+                                    <div className="p-2 rounded-lg bg-slate-800/60">
+                                        <Clock className="h-4 w-4" />
+                                    </div>
+                                    <span>Last seen {profile.lastSeenAt ? new Date(profile.lastSeenAt).toLocaleString() : 'Recently'}</span>
+                                </div>
                             )}
                         </div>
+
+                        {/* Relationship Badge */}
+                        {relationship === 'FRIEND' && (
+                            <div className="mt-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-500/10 text-green-400 text-xs font-medium border border-green-500/20">
+                                <span className="h-1.5 w-1.5 rounded-full bg-green-400" /> Friends
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -29,3 +29,7 @@ export function reactToMessage(messageId, type) {
 export function removeReaction(messageId) {
   return apiClient.delete(`/chats/messages/${messageId}/react`);
 }
+
+export function markAsRead(chatId) {
+  return apiClient.post(`/chats/${chatId}/read`);
+}

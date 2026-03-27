@@ -4,7 +4,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { FeatureFlagsProvider } from './context/FeatureFlagsContext.jsx';
 import LoginPage from './pages/Auth/LoginPage.jsx';
 import RegisterPage from './pages/Auth/RegisterPage.jsx';
-import VerifyEmailPage from './pages/Auth/VerifyEmailPage.jsx';
+
 import DashboardPage from './pages/Dashboard/DashboardPage.jsx';
 import ChatPage from './pages/Chat/ChatPage.jsx';
 import ProfilePage from './pages/Profile/ProfilePage.jsx';
@@ -24,7 +24,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
+
           <Route path="/chat/:chatId" element={<ChatPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/profile/:userId" element={<UserProfilePage />} />
