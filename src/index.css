@@ -44,12 +44,14 @@ body {
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.8); /* slate-400 */
+  background-color: rgba(148, 163, 184, 0.8);
+  /* slate-400 */
   border-radius: 9999px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(59, 130, 246, 0.9); /* brand-ish blue */
+  background-color: rgba(59, 130, 246, 0.9);
+  /* brand-ish blue */
 }
 
 /* Textarea scrollbar styling */
@@ -62,12 +64,14 @@ textarea.input::-webkit-scrollbar-track {
 }
 
 textarea.input::-webkit-scrollbar-thumb {
-  background-color: rgba(100, 116, 139, 0.5); /* slate-500 */
+  background-color: rgba(100, 116, 139, 0.5);
+  /* slate-500 */
   border-radius: 9999px;
 }
 
 textarea.input::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(99, 102, 241, 0.7); /* brand-ish */
+  background-color: rgba(99, 102, 241, 0.7);
+  /* brand-ish */
 }
 
 textarea.input {
@@ -86,6 +90,7 @@ section.scrollbar-thin {
     opacity: 0;
     transform: translateY(8px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -94,4 +99,56 @@ section.scrollbar-thin {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Telegram-style Emoji Animations */
+@keyframes emoji-breathing {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+@keyframes emoji-wobble {
+  0% {
+    transform: rotate(0deg) scale(1.1);
+  }
+
+  25% {
+    transform: rotate(10deg) scale(1.15);
+  }
+
+  50% {
+    transform: rotate(-10deg) scale(1.15);
+  }
+
+  75% {
+    transform: rotate(5deg) scale(1.1);
+  }
+
+  100% {
+    transform: rotate(0deg) scale(1.1);
+  }
+}
+
+.emoji-fancy {
+  display: inline-block;
+  animation: emoji-breathing 4s ease-in-out infinite;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: default;
+  user-select: none;
+}
+
+.emoji-fancy:hover {
+  animation: emoji-wobble 0.5s ease-in-out;
+  transform: scale(1.2);
+  z-index: 10;
 }

@@ -233,7 +233,11 @@ function DashboardPage() {
           {chats.length === 0 && <p className="subtle-text">No chats yet.</p>}
           <ul className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
             {chats.map((chat) => {
-              const other = (chat.participants || []).find((p) => p._id !== user.id && p._id !== user._id);
+              const otherParticipant = (chat.participants || []).find(
+                (p) => String(p.user?._id || p.user) !== String(user.id || user._id)
+              );
+              const other = otherParticipant?.user;
+
               return (
                 <li key={chat.chatId}>
                   <Link
@@ -241,13 +245,13 @@ function DashboardPage() {
                     className="flex items-center gap-3 rounded-xl border border-transparent bg-slate-800/30 p-3 transition hover:border-slate-700 hover:bg-slate-800/60"
                   >
                     <div className="relative h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-brand-700 flex items-center justify-center text-white text-sm font-bold shadow">
-                      {other ? other.name?.charAt(0).toUpperCase() : <MessageCircle className="h-4 w-4" />}
+                      {other?.name ? other.name.charAt(0).toUpperCase() : <MessageCircle className="h-4 w-4" />}
                       {other?.isOnline && <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-400 border-2 border-slate-950" />}
                     </div>
                     <div className="flex-1 overflow-hidden">
                       <div className="flex justify-between items-baseline">
                         <span className="truncate font-medium text-slate-100">
-                          {other ? `${other.name}` : chat.chatId}
+                          {other?.name || chat.chatId}
                         </span>
                         {/* timestamp could go here */}
                       </div>

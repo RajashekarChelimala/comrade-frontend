@@ -21,16 +21,24 @@ async function request(path, options = {}) {
   const method = (options.method || 'GET').toUpperCase();
   const isMutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const requestOptions = {
+    method,
+    credentials: 'include',
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(options.headers?.['Content-Type'] === null ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(isMutating && csrf ? { 'X-CSRF-Token': csrf } : {}),
       ...(options.headers || {}),
-    },
-    credentials: 'include',
-    ...options,
-  });
+    }
+  };
+
+  // If Content-Type is null, remove it so fetch can set the boundary
+  if (options.headers?.['Content-Type'] === null) {
+     delete requestOptions.headers['Content-Type'];
+  }
+
+  const res = await fetch(`${BASE_URL}${path}`, requestOptions);
 
   const contentType = res.headers.get('content-type');
   const isJson = contentType && contentType.includes('application/json');
@@ -49,4 +57,9 @@ export const apiClient = {
   post: (path, data) => request(path, { method: 'POST', body: JSON.stringify(data) }),
   patch: (path, data) => request(path, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (path) => request(path, { method: 'DELETE' }),
+  upload: (path, formData) => request(path, { 
+    method: 'POST', 
+    body: formData,
+    headers: { 'Content-Type': null } // Fetch will set correctly with boundary
+  }),
 };

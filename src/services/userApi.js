@@ -41,3 +41,7 @@ export function unmuteUser(id) {
 export function reportUser(id, reason) {
   return apiClient.post(`/users/${id}/report`, { reason });
 }
+
+export function updateMood(payload) {
+  return apiClient.patch('/users/me/mood', payload);
+}
