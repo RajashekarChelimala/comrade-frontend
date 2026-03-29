@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getTasks, updateTaskStatus, deleteTask } from '../../services/chatApi';
 import { ListTodo, CheckCircle2, Circle, Clock, ChevronRight, User, Trash2 } from 'lucide-react';
 
-export function TaskPanel({ chatId, isOpen, onClose }) {
+export function TaskPanel({ chatId, isOpen, onClose, userId, onScrollToMessage }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -87,7 +87,15 @@ export function TaskPanel({ chatId, isOpen, onClose }) {
                   >
                     {task.status === 'done' ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
                   </button>
-                  <div className="flex-1 min-w-0">
+                  <div 
+                    className="flex-1 min-w-0 cursor-pointer"
+                    onClick={() => {
+                      if (task.createdFromMessage) {
+                        onClose();
+                        onScrollToMessage(task.createdFromMessage._id || task.createdFromMessage);
+                      }
+                    }}
+                  >
                     <h4 className={`text-sm font-medium truncate ${task.status === 'done' ? 'line-through text-slate-500' : 'text-slate-200'}`}>
                       {task.title}
                     </h4>
@@ -110,12 +118,15 @@ export function TaskPanel({ chatId, isOpen, onClose }) {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); deleteTaskItem(task._id); }}
-                    className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {/* Only allow creator to delete */}
+                  {String(userId) === String(task.createdBy?._id || task.createdBy) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteTaskItem(task._id); }}
+                      className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

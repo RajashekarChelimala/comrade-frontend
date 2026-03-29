@@ -26,6 +26,10 @@ export function editMessage(messageId, text) {
   return apiClient.patch(`/chats/messages/${messageId}`, { text });
 }
 
+export function deleteMessage(messageId) {
+  return apiClient.delete(`/chats/messages/${messageId}`);
+}
+
 export function reactToMessage(messageId, type) {
   return apiClient.post(`/chats/messages/${messageId}/react`, { type });
 }

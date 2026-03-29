@@ -22,6 +22,8 @@ export function MessageItem({
   getDownloadUrl
 }) {
   const [showOptions, setShowOptions] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(m.content || '');
   const myId = user.id || user._id;
 
   const renderStatusIcon = () => {
@@ -49,6 +51,15 @@ export function MessageItem({
   };
 
   const renderContent = () => {
+    if (m.isDeleted) {
+      return (
+        <div className="flex items-center gap-2 opacity-50 italic py-1">
+          <Trash2 className="h-3.5 w-3.5" />
+          <span>This message was deleted</span>
+        </div>
+      );
+    }
+
     if (m.type === 'text') {
       const trimmed = m.content?.trim();
       const emojiCount = isEmojiOnly(trimmed) ? getEmojiCount(trimmed) : 0;
@@ -64,6 +75,39 @@ export function MessageItem({
             {emojis.map((e, i) => (
               <span key={i} className="emoji-fancy">{e.segment}</span>
             ))}
+          </div>
+        );
+      }
+
+      if (isEditing) {
+        return (
+          <div className="flex flex-col gap-2 min-w-[200px]">
+            <textarea
+              autoFocus
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  onEdit(m, editText);
+                  setIsEditing(false);
+                } else if (e.key === 'Escape') {
+                  setIsEditing(false);
+                }
+              }}
+              className="w-full bg-black/20 text-white rounded-lg p-2 text-sm focus:outline-none border border-white/10"
+              rows={Math.max(1, editText.split('\n').length)}
+            />
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={(e) => { e.stopPropagation(); setIsEditing(false); }}
+                className="p-1 px-2 text-[10px] bg-slate-700 hover:bg-slate-600 rounded-md transition-colors"
+              >Cancel</button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); onEdit(m, editText); setIsEditing(false); }}
+                className="p-1 px-2 text-[10px] bg-brand-500 hover:bg-brand-400 font-bold rounded-md transition-colors"
+              >Save</button>
+            </div>
           </div>
         );
       }
@@ -237,7 +281,7 @@ export function MessageItem({
               {isMe && !m.isDeleted && (
                  <>
                    <button 
-                    onClick={(e) => { e.stopPropagation(); onEdit(m); setShowOptions(false); }}
+                    onClick={(e) => { e.stopPropagation(); setIsEditing(true); setEditText(m.content); setShowOptions(false); }}
                     className="p-2 hover:bg-slate-700 text-blue-400 rounded-lg transition-colors"
                     title="Edit"
                   >

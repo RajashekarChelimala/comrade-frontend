@@ -253,7 +253,11 @@ function DashboardPage() {
                         <span className="truncate font-medium text-slate-100">
                           {other?.name || chat.chatId}
                         </span>
-                        {/* timestamp could go here */}
+                        {chat.unreadCount > 0 && (
+                          <span className="h-5 min-w-[20px] px-1 bg-brand-500 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow-lg border border-slate-900 animate-pulse">
+                            {chat.unreadCount}
+                          </span>
+                        )}
                       </div>
                       <p className="truncate text-xs text-slate-400">
                         {chat.lastMessagePreview || 'No messages yet'}

@@ -4,7 +4,8 @@ import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { 
   getChat, getMessages, sendMessage, editMessage, 
   reactToMessage, removeReaction, markAsRead,
-  saveAsMemory, convertToTask, updateChatSettings
+  saveAsMemory, convertToTask, updateChatSettings,
+  deleteMessage
 } from '../../services/chatApi.js';
 import { updateMood } from '../../services/userApi.js';
 import { uploadMedia } from '../../services/mediaApi.js';
@@ -158,11 +159,10 @@ function ChatPage() {
     }
   };
 
-  const handleEditMessage = async (msg) => {
-    const newText = window.prompt('Edit message:', msg.content);
-    if (newText === null || newText === msg.content) return;
+  const handleEditMessage = async (msg, newText) => {
+    if (newText === msg.content) return;
     try {
-      await editMessage(msg.id, { content: newText });
+      await editMessage(msg.id || msg._id, newText);
       toast.success('Message updated');
     } catch (e) {
       toast.error('Failed to edit message');
@@ -172,7 +172,7 @@ function ChatPage() {
   const handleDeleteMessage = async (msg) => {
     if (!window.confirm('Delete this message?')) return;
     try {
-      await apiClient.delete(`/chats/messages/${msg.id || msg._id}`);
+      await deleteMessage(msg.id || msg._id);
       toast.success('Message deleted');
     } catch (e) {
       toast.error('Failed to delete message');
@@ -445,17 +445,79 @@ function ChatPage() {
           </div>
         </div>
 
-        <MemoryPanel 
-          chatId={chatId} 
-          isOpen={isMemoriesOpen} 
-          onClose={() => setIsMemoriesOpen(false)} 
-        />
-        
-        <TaskPanel 
-          chatId={chatId} 
-          isOpen={isTasksOpen} 
-          onClose={() => setIsTasksOpen(false)} 
-        />
+          <MemoryPanel 
+            chatId={chatId} 
+            isOpen={isMemoriesOpen} 
+            onClose={() => setIsMemoriesOpen(false)} 
+            userId={currentUser.id || currentUser._id}
+            onScrollToMessage={async (id) => {
+              const el = document.getElementById(`msg-${id}`);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900'), 2000);
+              } else {
+                // Not in DOM - jump to context
+                const loadToast = toast.loading('Traveling back in time...');
+                try {
+                  const res = await getMessages(chatId, { aroundMessageId: id });
+                  setMessages(res.messages);
+                  setHasMore(true); // Allow more loading from this new point
+                  if (res.messages.length > 0) {
+                    oldestTimestampRef.current = res.messages[0].createdAt;
+                  }
+                  toast.success('Arrived!', { id: loadToast });
+                  setTimeout(() => {
+                    const newEl = document.getElementById(`msg-${id}`);
+                    if (newEl) {
+                      newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      newEl.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900');
+                      setTimeout(() => newEl.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900'), 2000);
+                    }
+                  }, 500);
+                } catch (err) {
+                  toast.error('Failed to navigate history', { id: loadToast });
+                }
+              }
+            }}
+          />
+          
+          <TaskPanel 
+            chatId={chatId} 
+            isOpen={isTasksOpen} 
+            onClose={() => setIsTasksOpen(false)} 
+            userId={currentUser.id || currentUser._id}
+            onScrollToMessage={async (id) => {
+              const el = document.getElementById(`msg-${id}`);
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                el.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900');
+                setTimeout(() => el.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900'), 2000);
+              } else {
+                // Not in DOM - jump to context
+                const loadToast = toast.loading('Locating task message...');
+                try {
+                  const res = await getMessages(chatId, { aroundMessageId: id });
+                  setMessages(res.messages);
+                  setHasMore(true);
+                  if (res.messages.length > 0) {
+                    oldestTimestampRef.current = res.messages[0].createdAt;
+                  }
+                  toast.success('Found!', { id: loadToast });
+                  setTimeout(() => {
+                    const newEl = document.getElementById(`msg-${id}`);
+                    if (newEl) {
+                      newEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      newEl.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900');
+                      setTimeout(() => newEl.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900'), 2000);
+                    }
+                  }, 500);
+                } catch (err) {
+                  toast.error('Failed to locate message', { id: loadToast });
+                }
+              }
+            }}
+          />
       </div>
     </main>
   );

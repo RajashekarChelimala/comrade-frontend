@@ -84,14 +84,24 @@ export function ChatHeader({
           className="p-2 text-slate-400 hover:text-brand-400 hover:bg-brand-500/10 rounded-full transition-colors relative group"
         >
           <Star className="h-4.5 w-4.5" />
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Memories</span>
+          {chat.memoryCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 bg-brand-500 text-white text-[9px] flex items-center justify-center rounded-full border border-slate-900 font-bold animate-fadeIn">
+              {chat.memoryCount}
+            </span>
+          )}
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">Memories</span>
         </button>
         <button 
           onClick={onToggleTasks}
           className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/10 rounded-full transition-colors relative group"
         >
           <ListTodo className="h-4.5 w-4.5" />
-          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">Tasks</span>
+          {chat.pendingTaskCount > 0 && (
+            <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 bg-green-500 text-white text-[9px] flex items-center justify-center rounded-full border border-slate-900 font-bold animate-fadeIn">
+              {chat.pendingTaskCount}
+            </span>
+          )}
+          <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">Tasks</span>
         </button>
         <button 
           onClick={onOpenSettings}

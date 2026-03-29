@@ -3,7 +3,7 @@ import { getMemories, deleteMemory } from '../../services/chatApi';
 import { Star, Calendar, Tag, ChevronRight, Quote, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-export function MemoryPanel({ chatId, isOpen, onClose }) {
+export function MemoryPanel({ chatId, isOpen, onClose, userId, onScrollToMessage }) {
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -82,13 +82,8 @@ export function MemoryPanel({ chatId, isOpen, onClose }) {
                     key={memory._id}
                     className="bg-slate-800/40 rounded-xl p-3 border border-slate-700/50 hover:bg-slate-800/60 transition group cursor-pointer"
                     onClick={() => {
-                      const msgId = memory.message?._id || memory.message;
-                      const el = document.getElementById(`msg-${msgId}`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        el.classList.add('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900');
-                        setTimeout(() => el.classList.remove('ring-2', 'ring-brand-500', 'ring-offset-2', 'ring-offset-slate-900'), 2000);
-                      }
+                      onClose();
+                      onScrollToMessage(memory.message?._id || memory.message);
                     }}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -105,12 +100,15 @@ export function MemoryPanel({ chatId, isOpen, onClose }) {
                             ))}
                           </div>
                         )}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleDelete(memory._id); }}
-                          className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
+                        {/* Only allow creator to delete */}
+                        {String(userId) === String(memory.savedBy?._id || memory.savedBy) && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleDelete(memory._id); }}
+                            className="text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-500/10 rounded"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
                       </div>
                     </div>
                     <p className="text-xs text-slate-300 border-l-2 border-brand-500/30 pl-2 italic">
